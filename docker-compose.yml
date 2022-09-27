@@ -1,0 +1,53 @@
+version: "2"
+
+services:
+
+  devel:
+    build:
+      context: .
+    volumes:
+      - ./src/:/app
+    links:
+      - redis
+    command: run-devel
+    ports:
+      - "8000:8000"
+    environment:
+      ENABLE_BASIC_AUTH: "False"
+    env_file: env-devel
+
+  redis:
+    image: redis:4.0-alpine
+
+  uwsgi:
+    image: globalia_naru_uwsgi:final
+    build: .
+    env_file: env-uwsgi
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      ENABLE_BASIC_AUTH: "True"
+
+  uwsgi-builder:
+    image: globalia_naru_uwsgi:build
+    build: 
+      context: .
+      target: builder
+    env_file: env-uwsgi
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      ENABLE_BASIC_AUTH: "True"
+
+  postgres:
+    image: postgres:10.1-alpine
+    env_file: env-devel
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./postgres:/postgres
